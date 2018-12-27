@@ -22,6 +22,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private long lastUpdate = 0;
     private float last_x, last_y, last_z;
     private static final int SHAKE_THRESHOLD = 600;
+    private static final float ROTATE_THRESHOLD = 0.05f;
 
     FileOutputStream fileOutputStream;
 
@@ -59,14 +60,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             if((currentTime - lastUpdate) > 100){
                 long diffTime = (currentTime - lastUpdate);
-                lastUpdate = currentTime;
+
 
                 float speed = Math.abs(x+y+z - last_x - last_y - last_z)/diffTime*10000;
 
                 if(speed > SHAKE_THRESHOLD){
                     try {
                         fileOutputStream = openFileOutput("accelerometer.txt",MODE_APPEND);
-                        String record = diffTime+"\t"+"(x: "+x+", y: "+y+", z: "+z+")\n";
+                        String record = currentTime+"\t"+"(x: "+x+", y: "+y+", z: "+z+")\n";
                         fileOutputStream.write(record.getBytes());
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -85,6 +86,27 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 last_z = z;
             }
         }
+
+                long currentTime = System.currentTimeMillis();
+                float x = sensorEvent.values[0],
+                        y = sensorEvent.values[1],
+                        z = sensorEvent.values[2];
+                try {
+                    fileOutputStream = openFileOutput("gyroscope.txt",MODE_APPEND);
+                    String record = currentTime+"\t"+"(x: "+x+", y: "+y+", z: "+z+")\n";
+                    fileOutputStream.write(record.getBytes());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }finally {
+                    try{
+                        fileOutputStream.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    Toast.makeText(this,"Problem saving record",Toast.LENGTH_SHORT);
+                }
+
+
 
     }
 
