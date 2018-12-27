@@ -8,11 +8,22 @@ import android.hardware.SensorManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.widget.Toast;
+
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     private SensorManager sensorManager;
     private Sensor accelerometerSensor;
+
+    private long lastUpdate = 0;
+    private float last_x, last_y, last_z;
+    private static final int SHAKE_THRESHOLD = 600;
+
+    FileOutputStream fileOutputStream;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +49,42 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
+        Sensor sensor = sensorEvent.sensor;
+        if(sensor.getType() == Sensor.TYPE_ACCELEROMETER){
+            float x = sensorEvent.values[0],
+                    y = sensorEvent.values[1],
+                    z = sensorEvent.values[2];
 
+            long currentTime = System.currentTimeMillis();
+
+            if((currentTime - lastUpdate) > 100){
+                long diffTime = (currentTime - lastUpdate);
+                lastUpdate = currentTime;
+
+                float speed = Math.abs(x+y+z - last_x - last_y - last_z)/diffTime*10000;
+
+                if(speed > SHAKE_THRESHOLD){
+                    try {
+                        fileOutputStream = openFileOutput("accelerometer.txt",MODE_APPEND);
+                        String record = diffTime+"\t"+"(x: "+x+", y: "+y+", z: "+z+")\n";
+                        fileOutputStream.write(record.getBytes());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }finally {
+                        try{
+                            fileOutputStream.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        Toast.makeText(this,"Problem saving record",Toast.LENGTH_SHORT);
+                    }
+                }
+
+                last_x = x;
+                last_y = y;
+                last_z = z;
+            }
+        }
 
     }
 
@@ -46,4 +92,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onAccuracyChanged(Sensor sensor, int i) {
 
     }
+
+
 }
